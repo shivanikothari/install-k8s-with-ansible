@@ -3,23 +3,22 @@ Kubernetes (k8s) is an open-source system for automating deployment, scaling, an
 
 ## Get Started:
 * This setup will help you to install following components:
-  1. Docker on all the nodes.
-  2. kubeadm for creating k8s cluster.
-  3. Weave network plugin for establishing k8s cluster networking.
-  4. Helm - kubernetes package manager installation.
-  5. Kubernetes Dashboard
+ 1. Docker on all the nodes.
+ 2. kubeadm for creating k8s cluster.
+ 3. Weave network plugin for establishing k8s cluster networking.
+ 4. Helm - kubernetes package manager installation.
+ 5. Kubernetes Dashboard
   
 ### Prerequisite for deploying K8s Cluster:
 * At minimum you will require two host machines for deploying a kubernetes cluster.  
-    - Required OS Version: CentOS Linux release 7.5.1804 (Core)
+    - Required OS Version: CentOS Linux release 7.4 (Core)
     - Both machines should have same root credentials at the time of initial cluster setup.
-	- Ansible package to be installed on host machine where you are clonning this project.
+    - Ansible package to be installed on host machine where you are clonning this project.
 
 ### Steps to create Kubernetes Cluster:
 #### Step 1 : Pre Configuration
-----------------------------------------------------------------------
-    - This step will prompt you for details required to setup Kubernetes master and slave master and will according update your inventory file.
-    - Select option 1 or 2 based on the desired setup.
+* This step will prompt you for details required to setup Kubernetes master and slave master and will according update your inventory file.
+* Select option 1 or 2 based on the desired setup.
     ````
         $ cd ~/Kubernetes/
         $ sh init.sh 
@@ -36,12 +35,11 @@ Kubernetes (k8s) is an open-source system for automating deployment, scaling, an
 		1
     ````
 ### Step 2 : Kubernetes Cluster Deployment
-----------------------------------------------------------------------
-    - In Kubernetes setup we have master and slave nodes. Slave nodes are also known as worker node or Minion. From the master node we manage the cluster and its nodes using ‘kubeadm‘ and ‘kubectl‘  command.
+* In Kubernetes setup we have master and slave nodes. Slave nodes are also known as worker node or Minion. From the master node we manage the cluster and its nodes using ‘kubeadm‘ and ‘kubectl‘  command.
 ````
         $ cd ~/Kubernetes/
         $ sh init.sh 
-        Date: Thu May 30 14:54:59 IST 2019
+        Date: Thu Aug 30 14:54:59 IST 2019
 
         Deploy Application with Kubernetes
         ----------------------------------------------------------------------
@@ -105,7 +103,7 @@ tiller-deploy          ClusterIP   10.98.4.12     <none>        44134/TCP       
 ````        
         $ cd ~/Kubernetes/
         $ sh init.sh 
-        Date: Thu May 30 14:54:59 IST 2019
+        Date: Thu Aug 30 14:54:59 IST 2019
 
         Deploy Application with Kubernetes
         ----------------------------------------------------------------------
@@ -123,7 +121,7 @@ tiller-deploy          ClusterIP   10.98.4.12     <none>        44134/TCP       
 ````        
         $ cd ~/Kubernetes/
         $ sh init.sh 
-        Date: Thu May 30 14:54:59 IST 2019
+        Date: Thu Aug 30 14:54:59 IST 2019
 
         Deploy Application with Kubernetes
         ----------------------------------------------------------------------
