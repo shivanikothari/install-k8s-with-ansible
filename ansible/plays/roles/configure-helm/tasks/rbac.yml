@@ -1,0 +1,30 @@
+---
+- name: Creating tiller ServiceAccount
+  environment:
+     PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+  shell: kubectl create sa --namespace kube-system tiller
+  register: result
+  changed_when: "'created' in result.stdout"
+  failed_when: "result.rc != 0 and 'already exists' not in result.stderr"
+
+- name: Creating tiller ClusterRoleBinding
+  environment:
+     PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+  shell: kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+  register: result
+  changed_when: "'created' in result.stdout"
+  failed_when: "result.rc != 0 and 'already exists' not in result.stderr"
+
+- name: Checking ServiceAccount field in {{ helm_tiller }} deployment
+  environment:
+     PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+  shell: kubectl get deploy {{ helm_tiller }} -n kube-system -o yaml
+  register: result
+  changed_when: False
+
+- name: Updating field of {{ helm_tiller }} deployment
+  environment:
+     PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+  shell: kubectl patch deploy {{ helm_tiller }} -n kube-system -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+  register: result
+  when: "'serviceAccount: tiller' not in result.stdout"

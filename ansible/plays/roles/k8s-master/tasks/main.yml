@@ -1,0 +1,137 @@
+---
+  - name: Changing hostname to {{ inventory_hostname }}
+    hostname: name={{ inventory_hostname }}
+
+  - name: lineinfile  with mode single enabled
+    lineinfile:
+      dest: /etc/hosts
+      line: "{{ ansible_host }} {{ inventory_hostname }}"
+      state: present
+    when: cluster_type == "single"
+
+  - name: Copying config.yaml with mode single enabled
+    copy:
+      src: "{{ role_path }}/files/kubeadm/config.yaml"
+      dest: /tmp/config.yaml
+    when: cluster_type == "single"
+
+  - name: Setting config.yaml  with mode single enabled
+    replace:
+      path: /tmp/config.yaml
+      regexp: "MASTER_IP_ADDRESS"
+      replace: "{{ ansible_host }}"
+    when: cluster_type == "single"
+
+  - name: Copying host details with mode multi enabled
+    copy:        
+      src: "{{ role_path }}/files/ha.master"
+      dest: "/tmp"
+    when: cluster_type == "multi"
+
+  - name: Deleting duplicate host entries with mode multi enabled
+    shell: IFS=$'\n' ; for i in `cat /tmp/ha.master`; do  sed -ri "/$i/d" /etc/hosts ; done
+    when: cluster_type == "multi"
+
+  - name: Adding host details with mode multi enabled
+    shell: "cat /tmp/ha.master >> /etc/hosts"
+    when: cluster_type == "multi"
+
+  - name: Copying config.yaml with mode multi enabled
+    copy:
+      src: "{{ role_path }}/files/kubeadm/config-ha.yaml"
+      dest: "/tmp/config.yaml"
+    when: cluster_type == "multi"
+
+  - name: Setting config.yaml with mode multi enabled
+    replace:
+      path: /tmp/config.yaml
+      regexp: "LB_IP_ADDRESS"
+      replace: "{{ LB_IP_ADDRESS }}"
+    when: cluster_type == "multi"
+
+  - name: Setting config.yaml with mode multi enabled
+    replace:
+      path: /tmp/config.yaml
+      regexp: "LB_APISERVER_PORT"
+      replace: "{{ LB_APISERVER_PORT }}"
+    when: cluster_type == "multi"
+
+  - name: Setting config.yaml
+    replace:
+      path: /tmp/config.yaml
+      regexp: "KUBERNETES_VERSION"
+      replace: "{{ KUBERNETES_VERSION }}"
+
+  - name: Initialize kubeadm 
+    command: kubeadm init --config=/tmp/config.yaml  
+    register: log
+    environment:
+      PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    when: cluster_type == "single"
+  - debug: msg={{ log.stdout }}
+    when: cluster_type == "single"
+
+  - name: Initialize kubeadm
+    command: kubeadm init --config=/tmp/config.yaml  --experimental-upload-certs
+    register: log
+    environment:
+      PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    when: cluster_type == "multi"
+  - debug: msg={{ log.stdout }}
+    when: cluster_type == "multi"
+
+  - name: Changing file permissions
+    file:
+      path: /etc/kubernetes/admin.conf
+      state: file
+      mode: u=rw,g=-,o=r
+
+  - name: Creating .kube directory
+    become: yes
+    become_user: "{{ default_ssh_user }}"  
+    file:
+      path: $HOME/.kube
+      state: directory
+      mode: 0755
+ 
+  - name: Copying admin.conf to user's kube config
+    become: yes
+    become_user: "{{ default_ssh_user }}"  
+    copy:
+      src: /etc/kubernetes/admin.conf
+      dest: $HOME/.kube/config
+      remote_src: yes
+      owner: "{{ default_ssh_user }}"
+
+  - name: Changing file permissions
+    become: yes
+    become_user: "{{ default_ssh_user }}"
+    file:
+      path: $HOME/.kube/config
+      state: file
+      mode: u=rw,g=-,o=-
+
+  - name: Changing file permissions
+    file:
+      path: /etc/kubernetes/admin.conf
+      state: file
+      mode: u=rw,g=-,o=-
+
+  - name: Creating remote temp directory 
+    become: yes
+    become_user: "{{ default_ssh_user }}"
+    file:
+     path: "{{ kubernetes_remote_dir }}"
+     state: directory
+
+  - name: Copying weave.yaml to temp directory
+    become: yes
+    become_user: "{{ default_ssh_user }}"
+    copy:
+      src: "{{ role_path }}/files/weave/{{ kubernetes_version }}/weave.yaml"
+      dest: "{{ kubernetes_remote_dir }}"
+
+  - name: Installing pod network
+    become: yes
+    become_user: "{{ default_ssh_user }}"
+    shell: kubectl apply -f "{{ kubernetes_remote_dir }}/weave.yaml"

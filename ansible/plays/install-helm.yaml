@@ -1,0 +1,8 @@
+---
+  - name: Installing Helm
+    hosts: "k8s-master"
+    become: yes
+    become_method: su
+    become_user: root
+    roles:
+     - 'configure-helm'

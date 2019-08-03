@@ -1,0 +1,5 @@
+#Default kubernetes master details:
+default_ssh_user: "kubemaster"
+default_ssh_pass: "kubemaster"
+default_groups: "docker"
+default_kubemaster_home: "/opt/kubemaster"

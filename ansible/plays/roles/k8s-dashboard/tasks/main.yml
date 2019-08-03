@@ -1,0 +1,36 @@
+---
+    - name: Copying dashboard YAML to remote directory
+      become: yes
+      become_method: su
+      become_user: "{{ default_ssh_user }}"
+      copy:
+        src: "{{ role_path }}/files/"
+        dest: "{{ deployment_file_path }}"
+      with_items:
+        - dashboard.yaml
+        - admin_user.yaml
+        - admin_rights.yaml
+
+    - name: Creating kubernetes dashboard
+      become: yes
+      become_method: su
+      become_user: "{{ default_ssh_user }}"
+      environment:
+        PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+      shell: kubectl create -f {{ deployment_file_path }}/dashboard.yaml
+
+    - name: Creating admin user
+      become: yes
+      become_method: su
+      become_user: "{{ default_ssh_user }}"
+      environment:
+        PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+      shell: kubectl create -f {{ deployment_file_path }}/admin_user.yaml
+
+    - name: Granting access rights
+      become: yes
+      become_method: su
+      become_user: "{{ default_ssh_user }}"
+      environment:
+        PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+      shell: kubectl create -f {{ deployment_file_path }}/admin_rights.yaml

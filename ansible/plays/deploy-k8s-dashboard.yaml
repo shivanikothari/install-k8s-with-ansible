@@ -1,0 +1,8 @@
+---
+  - name: Deploy kubernetes dashboard
+    hosts: "k8s-master"
+    become: yes
+    become_method: su
+    become_user: "{{ default_ssh_user }}"
+    roles:
+     - 'k8s-dashboard'

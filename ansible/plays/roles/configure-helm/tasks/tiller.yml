@@ -1,0 +1,6 @@
+---
+- name: Install or Upgrade tiller
+  shell: "helm init --client-only --skip-refresh"
+
+- name: Install or Upgrade tiller
+  shell: "helm init"

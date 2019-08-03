@@ -1,0 +1,15 @@
+#Common dependencies packages for docker & kubeadm:
+common_packages: "{{ playbook_dir }}/files/common-docker-kubeadm-packages"
+
+#Default docker details:
+docker_remote_dir: "/tmp/docker"
+docker_version: "18.06.3.ce-3"
+
+#Default kubeadm details:
+kubernetes_remote_dir: "/tmp/kubernetes"
+kubernetes_version: "1.14.2-0"
+
+#Required images for kubeadm initialization:
+src_image_dir: "kubeadm_init_images"
+remote_image_dir: "/tmp/images"
+

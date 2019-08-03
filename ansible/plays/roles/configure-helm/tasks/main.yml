@@ -1,0 +1,19 @@
+---
+  - name: Installing Helm
+    copy:
+     src: "{{ role_path }}/files/{{ helm_version }}/helm"
+     dest: "{{ helm_bin_dir }}/helm"
+     owner: "{{ default_ssh_user }}"
+     group: "{{ default_ssh_user }}"
+     mode: "0755"
+
+  - import_tasks: "{{ role_path }}/tasks/tiller.yml"
+    become: yes
+    become_method: su
+    become_user: "{{ default_ssh_user }}"
+
+  - import_tasks: "{{ role_path }}/tasks/rbac.yml"
+    become: yes
+    become_method: su
+    become_user: "{{ default_ssh_user }}"
+

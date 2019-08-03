@@ -1,0 +1,15 @@
+[k8s-master]
+
+[k8s-master-HA]
+
+[k8s-slave]
+
+[docker-servers]
+
+[k8s-nodes:children]
+k8s-master
+k8s-slave
+k8s-master-HA
+
+[all:vars]
+ansible_connection=ssh

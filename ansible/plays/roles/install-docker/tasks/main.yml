@@ -1,0 +1,40 @@
+---
+    - name: Disabling selinux
+      selinux:
+        state: disabled
+
+    - name: Creating remote directory for packages
+      file:
+        path: "{{ docker_remote_dir }}"
+        state: directory
+
+    - name: Copying packages to remote directory
+      copy:
+        src: "{{ role_path }}/files/rpm/{{ docker_version }}/{{ item }}"
+        dest: "{{ docker_remote_dir }}"
+      with_items:  "{{ docker_packages }}"
+
+    - name: Installing docker packages
+      yum:
+        name: "{{ docker_remote_dir }}/{{ item }}"
+        state: present
+      with_items: "{{ docker_packages }}"
+
+    - name: Deleted remote temp directory
+      file:
+        path: "{{ docker_remote_dir }}"
+        state: absent
+
+    - name: Starting Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes
+
+    - name: Adding user to docker group
+      user:
+        name: "{{ docker_user }}"
+        groups: docker
+        append: yes
+      become: yes

@@ -1,0 +1,4 @@
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+kubernetesVersion: "KUBERNETES_VERSION"
+controlPlaneEndpoint: "LB_IP_ADDRESS:LB_APISERVER_PORT"

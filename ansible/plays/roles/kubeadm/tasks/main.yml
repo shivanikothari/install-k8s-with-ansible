@@ -1,0 +1,39 @@
+  - name: Creating remote directory {{ kubernetes_remote_dir }} for packages
+    file:
+     path: "{{ kubernetes_remote_dir }}"
+     state: directory
+
+  - name: Copying k8s packages to {{ kubernetes_remote_dir }}
+    copy:
+     src: "{{ role_path }}/files/rpm/{{ item }}"
+     dest: "{{ kubernetes_remote_dir }}"
+    with_items:  "{{ kubernetes_version }}/"
+
+  - name: Installing k8s packages
+    shell:  rpm -ivh --replacefiles --replacepkgs --force {{ kubernetes_remote_dir }}/*.rpm
+    args:
+      warn: false
+
+  - name: Deleting created temp directory
+    file:
+     path: "{{ kubernetes_remote_dir }}"
+     state: absent
+
+  - name: Setting cgroup-driver
+    replace:
+      path: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+      regexp: 'KUBELET_CGROUP_ARGS=--cgroup-driver=(.*?)"'
+      replace: 'KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"'
+      backup: yes
+    when: kubernetes_version == "1.10.5-0"
+
+  - name: Reload Daemon
+    systemd:
+     daemon_reload: yes
+
+  - name: Starting kubelet service
+    service:
+     name: kubelet
+     state: started
+     enabled: yes
+

@@ -1,0 +1,10 @@
+---
+- name: Install docker
+  hosts: docker-servers
+  become: yes
+  become_method: su
+  become_user: root
+  environment:
+    PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+  roles:
+    - 'install-docker'

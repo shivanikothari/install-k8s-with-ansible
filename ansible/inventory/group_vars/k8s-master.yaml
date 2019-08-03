@@ -1,0 +1,18 @@
+KUBERNETES_VERSION: "1.14.2"
+cluster_type: "multi"
+
+LB_IP_ADDRESS: "192.168.7.218"
+LB_APISERVER_PORT: "6443"
+
+#Default kubernetes master details:
+default_ssh_user: "kubemaster"
+default_ssh_pass: "kubemaster"
+default_groups: "docker"
+default_kubemaster_home: "/opt/kubemaster"
+
+#Helm Installation details: 
+helm_version: "2.13.1"
+helm_tiller: "tiller-deploy"
+helm_bin_dir: "/usr/local/bin/"
+helm_refresh_cache: "" 
+

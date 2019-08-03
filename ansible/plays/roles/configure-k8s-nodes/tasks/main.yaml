@@ -1,0 +1,26 @@
+  - name: Disable swap
+    command: swapoff -a
+    when: ansible_swaptotal_mb > 0
+
+  - name: Disabling selinux
+    selinux:
+     state: disabled
+     
+  - modprobe:
+      name: br_netfilter
+      state: present
+
+  - name: Updating kernel settings
+    sysctl:
+     name: net.bridge.bridge-nf-call-iptables
+     value: 1
+     sysctl_set: yes
+     state: present
+     reload: yes
+     
+  - sysctl:
+     name: net.ipv4.ip_forward
+     value: 1
+     sysctl_set: yes
+     state: present
+     reload: yes

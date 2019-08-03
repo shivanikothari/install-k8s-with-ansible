@@ -1,0 +1,57 @@
+---
+    - name: Creating remote directory {{ docker_remote_dir }} for packages
+      file:
+        path: "{{ docker_remote_dir }}"
+        state: directory
+
+    - name: Copying packages to {{ docker_remote_dir }}
+      copy:
+        src: "{{ item }}"
+        dest: "{{ docker_remote_dir }}"
+      with_items:  
+       - "{{ common_packages }}/"
+       - "{{ role_path }}/files/rpm/{{ docker_version }}/"
+
+
+    - name: Installing {{ docker_remote_dir }}/*.rpm packages
+      shell:  rpm -ivh --replacefiles --replacepkgs --force {{ docker_remote_dir }}/*.rpm  
+      args:
+        warn: false 
+
+    - name: Deleting {{ docker_remote_dir }}
+      file:
+        path: "{{ docker_remote_dir }}"
+        state: absent
+
+    - name: Fetching registry detail
+      shell: echo "{{ docker_registry }}" | awk -F ':' '{print $1}'
+      register: registry
+    - debug: msg={{ registry.stdout }}
+
+    - lineinfile:
+        dest: /etc/hosts
+        line: "{{ docker_host }} {{ registry.stdout }}"
+        state: present
+      when: configure_registry == "true"
+
+    - name: Creating remote directory /etc/docker/
+      file:
+        path: "/etc/docker"
+        state: directory
+
+    - name: Create daemon.json for private registry
+      copy:
+        content: "{ \"insecure-registries\":[\"{{ docker_registry }}\"] }"
+        dest: "/etc/docker/daemon.json"
+      when: configure_registry == "true"
+
+    - name: Reload Daemon
+      systemd: daemon_reload=yes
+      when: configure_registry == "true"
+
+    - name: Starting Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes

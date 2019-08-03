@@ -1,0 +1,138 @@
+---
+  - name: Performing pre-requisite for k8s cluster
+    hosts: "k8s-nodes"
+    become: yes
+    become_method: su
+    become_user: root
+    environment:
+      PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    roles:
+     - 'configure-k8s-nodes'
+     - role: 'docker'
+     - role: 'kubeadm'
+
+  - name: Install Kubernetes master
+    hosts: "k8s-master"
+    become: yes
+    become_method: su
+    become_user: root
+    roles:
+     - { role: create-user, user_name: "{{default_ssh_user }}", user_home: "{{ default_kubemaster_home }}", group_name: "{{ default_groups }}", password: "{{default_ssh_pass }}"  }
+     - 'k8s-master'
+
+  - name: Install Kubernetes master
+    hosts: "k8s-master-HA"
+    become: yes
+    become_method: su
+    become_user: root
+    roles:
+     - { role: create-user, user_name: "{{default_ssh_user }}", user_home: "{{ default_kubemaster_home }}", group_name: "{{ default_groups }}", password: "{{default_ssh_pass }}"  }
+     
+
+  - hosts: k8s-master
+    become: yes
+    become_method: su
+    become_user: "{{ default_ssh_user }}"
+    gather_facts: false
+    tasks:
+      - name: Creating join command
+        shell: kubeadm token create --print-join-command  --kubeconfig $HOME/.kube/config --ttl=0
+        register: join_command_raw
+      - debug: msg={{ join_command_raw.stdout }}
+
+      - name: Setting join command
+        set_fact:
+          join_command: "{{ join_command_raw.stdout_lines[0] }}"
+
+      - name: sleep for 120 seconds and continue with play
+        wait_for: timeout=120
+
+      - name: Looking for weave config
+        command: find /etc/cni/net.d/ -name '*weave*'
+        register: files_to_copy
+
+      - fetch:
+          src: "{{ item }}"
+          dest: /tmp/
+          flat: yes
+        loop: "{{ files_to_copy.stdout_lines }}"
+
+  - name: Configure Kubernetes slave
+    hosts: "k8s-slave"
+    become: yes
+    become_method: su
+    become_user: root
+    environment:
+      PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    tasks:
+      - name: Copying weave config to remote slave
+        copy:
+          src: "{{ item }}"
+          dest: /etc/cni/net.d/
+        with_fileglob:
+        - /tmp/*weave*
+
+  - hosts: k8s-master
+    become: yes
+    become_method: su
+    become_user: "root"
+    gather_facts: false
+    tasks:
+      - name: Fetching secrets
+        shell: kubeadm init phase upload-certs --experimental-upload-certs | tail -1
+        register: secrets_raw
+      - debug: msg={{ secrets_raw.stdout }}
+      - name: Setting join command
+        set_fact:
+          certs_secret: "{{ secrets_raw.stdout_lines[0] }}"
+
+  - name: Install Kubernetes slave
+    hosts: "k8s-master-HA"
+    become: yes
+    become_method: su
+    become_user: root
+    environment:
+      PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    roles:
+     - role: 'k8s-master-HA'
+       vars:
+        join_cluster: "{{ hostvars[groups['k8s-master'][0]]['join_command'] }}"
+        cluster_certs: "{{ hostvars[groups['k8s-master'][0]]['certs_secret'] }}"
+
+  - name: Install Kubernetes slave
+    hosts: "k8s-slave"
+    become: yes
+    become_method: su
+    become_user: root
+    environment:
+      PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    roles:
+     - role: 'k8s-slave'
+       vars:
+        join_cluster: "{{ hostvars[groups['k8s-master'][0]]['join_command'] }}"
+
+  - hosts: "k8s-master"
+    become: yes
+    become_method: su
+    become_user: "{{ default_ssh_user }}"
+    name: Getting node details
+    environment:
+       PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    tasks:
+      - shell: "kubectl get nodes| grep none | awk '{print $1}'"
+        register: slave_list
+      - name: Setting facts
+        set_fact:
+          slaves: "{{ slave_list.stdout_lines }}"
+      - debug: msg={{ slaves }}
+
+  - hosts: "k8s-master"
+    become: yes
+    become_method: su
+    become_user: "{{ default_ssh_user }}"
+    name: Assigning node label
+    environment:
+       PATH: "/usr/java/default/bin:/usr/lib64/qt-3.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin:/sbin"
+    tasks:
+      - shell: "kubectl label node {{ item }} node-role.kubernetes.io/slave="
+        with_items: "{{ slaves }}"
